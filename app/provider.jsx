@@ -1,4 +1,6 @@
+import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { AppSidebar } from "./_components/AppSideBar";
 
 function Provider({ children, ...props }) {
   return (
@@ -8,7 +10,11 @@ function Provider({ children, ...props }) {
       enableSystem
       disableTransitionOnChange
     >
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarTrigger />
       {children}
+      </SidebarProvider>
     </NextThemesProvider>
   );
 }
