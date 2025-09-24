@@ -1,6 +1,8 @@
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { AppSidebar } from "./_components/AppSideBar";
+import AppHeader from "./_components/AppHeader";
+import { AiModelsProvider } from "./contexts/AiModelsContext";
 
 function Provider({ children, ...props }) {
   return (
@@ -10,11 +12,15 @@ function Provider({ children, ...props }) {
       enableSystem
       disableTransitionOnChange
     >
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarTrigger />
-      {children}
-      </SidebarProvider>
+      <AiModelsProvider>
+        <SidebarProvider>
+          <AppSidebar />
+          <div className="w-full">
+            <AppHeader />
+            {children}
+          </div>
+        </SidebarProvider>
+      </AiModelsProvider>
     </NextThemesProvider>
   );
 }
