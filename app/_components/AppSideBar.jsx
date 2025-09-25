@@ -7,11 +7,12 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
-import { Sun, Moon, Lock } from "lucide-react"; // ← Agregar Lock
+import { Sun, Moon, Lock, Zap } from "lucide-react"; // ← Agregar Lock
 import Image from "next/image";
 import { useTheme } from "next-themes";
 import { useAiModels } from "../contexts/AiModelsContext";
 import { Switch } from "@/components/ui/switch";
+import UsageCreditProgress from "./UsageCreditProgress";
 
 export function AppSidebar() {
   const { theme, setTheme } = useTheme();
@@ -127,7 +128,10 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        <h1>Profile</h1>
+        <section className="">
+          <UsageCreditProgress />
+          <Button className={'w-full mb-3 rounded-3xl'}><Zap />Upgrade Plan</Button>
+        </section>
       </SidebarFooter>
     </Sidebar>
   );
