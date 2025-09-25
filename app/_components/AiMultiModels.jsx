@@ -3,26 +3,47 @@ import { useAiModels } from "../contexts/AiModelsContext"; // ← IMPORTAR EL CO
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
+  SelectLabel,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
 import Image from "next/image";
 import { Switch } from "@/components/ui/switch";
-import { MessageSquare, Lock } from "lucide-react"; // ← Agregar Lock
+import { MessageSquare, Lock } from "lucide-react";
+import { useContext } from "react";
+import { AiSelectedModelContext } from "../contexts/AiSelectedModelContext";
+import { doc, updateDoc } from "firebase/firestore";
+import { db } from "@/config/FirebaseConfig"; 
+import { useUser } from "@clerk/nextjs";
 
 function AiMultiModels() {
-  // USAR EL CONTEXT EN LUGAR DEL ESTADO LOCAL
+  const { user } = useUser();
+  const { aiSelectedModels, setAiSelectedModels } = useContext(
+    AiSelectedModelContext
+  );
   const { enabledModels, aiModelList, toggleModel } = useAiModels();
-
   const handleToggle = (modelName, enabled) => {
     toggleModel(modelName, enabled);
   };
-
-  // Contar modelos activos NO premium para las validaciones
-  const nonPremiumEnabledCount = aiModelList.filter(model => 
-    model.enable && !model.premium
+  const nonPremiumEnabledCount = aiModelList.filter(
+    (model) => model.enable && !model.premium
   ).length;
+
+  const onSelectedValue = async (parentModel, value) => {
+    setAiSelectedModels((prev) => ({
+      ...prev,
+      [parentModel]: {
+        modelId: value,
+      },
+    }));
+    // Uptade to FireBase Database
+    const docRef = doc(db, "users", user?.primaryEmailAddress?.emailAddress);
+    await updateDoc(docRef, {
+      selectedModelPref: aiSelectedModels
+    })
+  };
 
   // Si no hay modelos activos, mostrar mensaje
   if (enabledModels.length === 0) {
@@ -40,8 +61,8 @@ function AiMultiModels() {
   return (
     <section className="flex flex-1 h-[80vh] border-b">
       {enabledModels.map((model) => (
-        <div 
-          key={model.model} 
+        <div
+          key={model.model}
           className="flex flex-col border-r h-full overflow-auto flex-1 min-w-0"
           style={{ maxWidth: `${100 / Math.max(1, enabledModels.length)}%` }}
         >
@@ -53,20 +74,47 @@ function AiMultiModels() {
                 width={24}
                 height={24}
               />
-              <Select defaultValue={model.subModel[0]?.name}>
+              <Select
+                defaultValue={aiSelectedModels[model.model].modelId}
+                onValueChange={(value) => onSelectedValue(model.model, value)}
+              >
                 <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder={model.subModel[0]?.name} />
+                  <SelectValue
+                    placeholder={aiSelectedModels[model.model].modelId}
+                  />
                 </SelectTrigger>
                 <SelectContent>
-                  {model.subModel.map((subModel, index) => (
-                    <SelectItem key={index} value={subModel.name}>
-                      {subModel.name}
-                    </SelectItem>
-                  ))}
+                  <SelectGroup className="px-3">
+                    <SelectLabel>Free</SelectLabel>
+                    {model.subModel.map(
+                      (subModel, i) =>
+                        subModel.premium == false && (
+                          <SelectItem key={i} value={subModel.id}>
+                            {subModel.id}
+                          </SelectItem>
+                        )
+                    )}
+                  </SelectGroup>
+                  <SelectGroup className="px-3">
+                    <SelectLabel>Premiun</SelectLabel>
+                    {model.subModel.map(
+                      (subModel, i) =>
+                        subModel.premium == true && (
+                          <SelectItem
+                            key={i}
+                            value={subModel.name}
+                            disabled={subModel.premium}
+                          >
+                            {subModel.name}{" "}
+                            {subModel.premium && <Lock className="h-4 w-4" />}
+                          </SelectItem>
+                        )
+                    )}
+                  </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
-            
+
             {/* SWITCH MEJORADO */}
             {model.premium ? (
               <div className="flex items-center gap-2 text-gray-400">
@@ -74,18 +122,18 @@ function AiMultiModels() {
                 <span className="text-xs">Premium</span>
               </div>
             ) : (
-              <Switch 
-                checked={model.enable} 
-                onCheckedChange={(checked) => handleToggle(model.model, checked)}
+              <Switch
+                checked={model.enable}
+                onCheckedChange={(checked) =>
+                  handleToggle(model.model, checked)
+                }
                 // Deshabilitar si es el último modelo no premium
                 disabled={nonPremiumEnabledCount <= 1 && model.enable}
               />
             )}
           </div>
-          
-          <div className="flex-1 p-4">
-            {/* Contenido del modelo */}
-          </div>
+
+          <div className="flex-1 p-4">{/* Contenido del modelo */}</div>
         </div>
       ))}
     </section>
